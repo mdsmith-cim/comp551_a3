@@ -1,11 +1,14 @@
 from preprocess import preprocess
+from data_utils import load_data
 
-# Initialize preprocess class
-pp = preprocess()
+trainX, trainY, testX = load_data()
 
-# Load from disk, threshold
-trainX, trainY, testX = pp.get_clean_data()
+# Initialize preprocess class: cleaning only
+pp = preprocess('clean')
 
-# SIFT Example
+trainX_clean = pp.transform(trainX)
 
-trainSIFTX, trainY, testSIFTX = pp.get_sift_features()
+# Initialize for SIFT
+pp = preprocess('sift')
+
+trainX_sift = pp.transform(trainX)

@@ -7,82 +7,81 @@ from tqdm import tqdm
 
 class preprocess:
 
-    def __init__(self, train_X_file='data/train_x.bin', train_y_file='data/train_y.csv', test_X_file='data/test_x.bin', threshold=254):
+    valid_processes = ['clean', 'sift']
 
-        self.train_X_file = train_X_file
-        self.test_X_file = test_X_file
-        self.train_y_file = train_y_file
+    def __init__(self, process, threshold=254, step_size=5):
+        """
+        Initializes the class.
+        :param process: string
+            Processing type to execute.  Possible options: 'clean' for clean data, 'sift' for SIFT features
+        :param threshold: integer
+            Threshold to apply when cleaning data.  Applies to all process types.
+        :param step_size: integer
+            Step size to use only when calculating SIFT features.  Smaller step sizes mean more features.
+        """
         self.threshold = threshold
+        self.step_size = step_size
 
-    def get_clean_data(self):
+        if process not in self.valid_processes:
+            raise Exception('process {0} is a valid process. Valid methods are: {1}'.format(process,
+                                                                                            self.valid_processes))
+        self.process = process
+        self.X_transform = None
 
-        trainData = np.fromfile(self.train_X_file, dtype='uint8')
-        trainData = trainData.reshape((100000, 60, 60))
+    def fit(self, X, y=None):
 
-        print("Training data loaded from file {0}".format(self.train_X_file))
+        return self
 
-        for i in range(trainData.shape[0]):
+    def transform(self, X, y=None):
 
-            img = trainData[i]
-            retval, thres = cv2.threshold(img, self.threshold, 255, cv2.THRESH_BINARY)
+        if self.process == 'clean':
+            return self._get_clean_data(X)
 
-            trainData[i] = thres
+        elif self.process == 'sift':
+            X_clean = self._get_clean_data(X)
+            return self._get_sift_features(X_clean)
+        else:
+            raise Exception('Invalid process {0}'.format(self.process))
 
-        print("Training data processed")
+    def fit_transform(self, X, y=None):
 
-        testData = np.fromfile(self.test_X_file, dtype='uint8')
-        testData = testData.reshape((20000, 60, 60))
+        return self.transform(X)
 
-        print("Test data loaded from file {0}".format(self.test_X_file))
+    def _get_clean_data(self, X):
 
-        for i in range(testData.shape[0]):
+        X_clean = np.zeros(X.shape, dtype='uint8')
 
-            img = testData[i]
-            retval, thres = cv2.threshold(img, self.threshold, 255, cv2.THRESH_BINARY)
+        max_uint8 = np.iinfo('uint8').max
 
-            testData[i] = thres
+        print("Cleaning data...")
+        for i in range(X.shape[0]):
+            retval, thres = cv2.threshold(X[i], self.threshold, max_uint8, cv2.THRESH_BINARY)
+            X_clean[i] = thres
 
-        print("Testing data processed")
+        print("Data cleaned")
+        return X_clean
 
-        trainLabels = pd.read_csv(self.train_y_file)['Prediction'].values
-
-        return trainData, trainLabels, testData
-
-    def get_sift_features(self, step_size=5):
-
-        trainX, trainY, testX = self.get_clean_data()
+    def _get_sift_features(self, X):
 
         sft = xfeatures2d.SIFT_create()
 
-        imgSize = trainX.shape[-2:]
+        imgSize = X.shape[-2:]
+        numImg = X.shape[0]
 
         # Create keypoint list
-        kp = [KeyPoint(x, y, step_size) for y in range(0, imgSize[0], step_size)
-              for x in range(0, imgSize[1], step_size)]
+        kp = [KeyPoint(x, y, self.step_size) for y in range(0, imgSize[0], self.step_size)
+              for x in range(0, imgSize[1], self.step_size)]
 
-        print("Computing SIFT features [training]")
+        print("Computing SIFT features...")
 
-        trainXSIFT = np.zeros((trainX.shape[0], len(kp), sft.descriptorSize()), dtype='uint8')
-        testXSIFT = np.zeros((testX.shape[0], len(kp), sft.descriptorSize()), dtype='uint8')
+        XSIFT = np.zeros((numImg, len(kp), sft.descriptorSize()))
 
-        for i in tqdm(range(trainX.shape[0])):
-            img = trainX[i]
+        for i in tqdm(range(numImg)):
+            img = X[i]
 
-            dsift = sft.compute(img, kp)[1]
-            trainXSIFT[i] = dsift
+            XSIFT[i] = sft.compute(img, kp)[1]
 
-        print("Computing SIFT features [testing]")
-
-        for i in tqdm(range(testX.shape[0])):
-            img = testX[i]
-
-            dsift = sft.compute(img, kp)[1]
-            testXSIFT[i] = dsift
-
-        print("Done!")
-
-        return trainXSIFT, trainY, testXSIFT
-
+        return XSIFT
 
     def writeToDisk(self, data, filename='data.bin'):
 
@@ -91,3 +90,8 @@ class preprocess:
     def readFromDisk(self, filename, shape):
 
         return np.fromfile(filename, dtype='uint8').reshape(shape)
+
+    # Crude imitation of sklearn's string representation functionality
+    def __repr__(self):
+        return 'preprocess' + str({'process': self.process, 'threshold': self.threshold, 'step_size': self.step_size})
+
