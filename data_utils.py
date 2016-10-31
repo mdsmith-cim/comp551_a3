@@ -26,3 +26,7 @@ def load_data(train_X_file='data/train_x.bin', train_y_file='data/train_y.csv', 
     trainLabels = pd.read_csv(train_y_file)['Prediction'].values
 
     return trainData, trainLabels, testData
+
+def export_csv(data, filename):
+    df = pd.DataFrame(data, columns=['Prediction'])
+    df.to_csv(filename, index_label='Id')
