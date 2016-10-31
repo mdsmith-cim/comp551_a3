@@ -8,11 +8,11 @@ if __name__ == '__main__':
 
     trainX, trainY, testX = load_data()
 
-    X_train, X_valid, y_train, y_valid = train_test_split(trainX, trainY, test_size=0.3)
+    X_train, X_valid, y_train, y_valid = train_test_split(trainX, trainY, test_size=0.3, random_state=984930)
 
     pipe = make_pipeline(preprocess('sift', flatten=True), LogisticRegression(solver='sag', n_jobs=-1, verbose=60))
 
     pipe.fit(X_train, y_train)
 
-    print(pipe.score(X_valid, y_valid))
+    print("Validation score: {0}".format(pipe.score(X_valid, y_valid)))
 
