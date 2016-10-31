@@ -7,7 +7,7 @@ if __name__ == '__main__':
     trainX, trainY, testX = load_data()
 
     # Initialize preprocess class: cleaning only
-    # Relevant arguments: threshold
+    # Relevant arguments: threshold, flatten
     #pp = preprocess('clean')
     #trainX_clean = pp.transform(trainX)
 
@@ -15,7 +15,9 @@ if __name__ == '__main__':
     # Relevant arguments:
     # - n_jobs: specify number of threads to run.  On a weaker computer use fewer threads to avoid running out of RAM
     # - step_size: Number of pixels between keypoints.  Smaller number = more keypoints and a larger feature vector
-    pp = preprocess('sift')
+    # - flatten: flattens SIFT vector to 1-D for use with algorithms that ignore spatial positioning like logistic
+    # regression
+    pp = preprocess('sift', flatten=True)
 
     # Transform data
     # IMPORTANT NOTE: automatic caching is in use:

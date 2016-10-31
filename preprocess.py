@@ -8,7 +8,7 @@ class preprocess:
 
     valid_processes = ['clean', 'sift']
 
-    def __init__(self, process, threshold=254, step_size=5, n_jobs=-1, cache_dir="cache"):
+    def __init__(self, process, threshold=254, step_size=5, flatten=False, n_jobs=-1, cache_dir="cache"):
         """
         Initializes the class.
         :param process: string
@@ -22,6 +22,7 @@ class preprocess:
         """
         self.threshold = threshold
         self.step_size = step_size
+        self.flatten = flatten
 
         if process not in self.valid_processes:
             raise Exception('process {0} is a valid process. Valid methods are: {1}'.format(process,
@@ -53,11 +54,11 @@ class preprocess:
         """
 
         if self.process == 'clean':
-            return self._get_clean_data(X)
+            return self._get_clean_data(X, self.flatten)
 
         elif self.process == 'sift':
-            X_clean = self._get_clean_data(X)
-            return self._get_sift_features(X_clean)
+            X_clean = self._get_clean_data(X, False)
+            return self._get_sift_features(X_clean, self.flatten)
         else:
             raise Exception('Invalid process {0}'.format(self.process))
 
@@ -73,7 +74,7 @@ class preprocess:
         return self.transform(X)
 
     # Takes input data and thresholds to remove background noise.
-    def _get_clean_data(self, X):
+    def _get_clean_data(self, X, flatten):
 
         X_clean = np.zeros(X.shape, dtype='uint8')
 
@@ -85,10 +86,14 @@ class preprocess:
             X_clean[i] = thres
 
         print("Data cleaned")
+        if flatten:
+            X_clean = X_clean.reshape((X.shape[0], -1))
+
         return X_clean
 
+
     # Calculates SIFT features.  Uses threads to speed up computation.
-    def _get_sift_features(self, X):
+    def _get_sift_features(self, X, flatten):
 
         numImg = X.shape[0]
 
@@ -96,6 +101,9 @@ class preprocess:
 
         result = np.array(Parallel(n_jobs=self.n_jobs)(delayed(self.sift_compute)(X[i], self.step_size)
                                                        for i in tqdm(range(numImg))))
+
+        if flatten:
+            result = result.reshape((X.shape[0], -1))
 
         return result
 
