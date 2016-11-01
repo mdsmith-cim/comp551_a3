@@ -36,14 +36,14 @@ from preprocess import preprocess
 def load_dataset():
     trainX, trainY, X_test = load_data()
 
-    pp = preprocess('sift', flatten=False)
+    pp = preprocess('sift', flatten=False, center=True, threshold=254, closing=False)
 
     trainX = pp.transform(trainX)
     X_test = pp.transform(X_test)
 
-    trainX = trainX.reshape((-1,1,144,128)).astype('float32')/np.float32(255)
+    trainX = trainX.reshape((-1, 1, 144, 128)).astype('float32')/np.float32(255)
 
-    X_test = X_test.reshape((-1,1,144,128)).astype('float32')/np.float32(255)
+    X_test = X_test.reshape((-1, 1, 144, 128)).astype('float32')/np.float32(255)
     trainY = trainY.astype('uint8')
 
     X_train, X_valid, y_train, y_valid = train_test_split(trainX, trainY, test_size=0.3, random_state=984930)
@@ -76,7 +76,7 @@ def build_mlp(input_var=None):
     # Add a fully-connected layer of 800 units, using the linear rectifier, and
     # initializing weights with Glorot's scheme (which is the default anyway):
     l_hid1 = lasagne.layers.DenseLayer(
-            l_in_drop, num_units=800,
+            l_in_drop, num_units=1600,
             nonlinearity=lasagne.nonlinearities.rectify,
             W=lasagne.init.GlorotUniform())
 
@@ -85,7 +85,7 @@ def build_mlp(input_var=None):
 
     # Another 800-unit layer:
     l_hid2 = lasagne.layers.DenseLayer(
-            l_hid1_drop, num_units=800,
+            l_hid1_drop, num_units=1600,
             nonlinearity=lasagne.nonlinearities.rectify)
 
     # 50% dropout again:
