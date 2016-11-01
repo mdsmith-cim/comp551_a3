@@ -80,7 +80,7 @@ class preprocess:
         elif self.process == 'sift':
             X_clean = self._get_clean_data(X, False, self.center, self.center_pad, self.closing,
                                            self.morph_size, self.threshold)
-            return self._get_sift_features(X_clean, self.flatten)
+            return self._get_sift_features(X_clean, self.flatten, self.n_jobs, self.step_size)
         else:
             raise Exception('Invalid process {0}'.format(self.process))
 
