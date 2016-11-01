@@ -52,7 +52,7 @@ class preprocess:
         self.memory = Memory(cachedir=cache_dir, verbose=1, compress=True)
 
         self._get_clean_data = self.memory.cache(self._get_clean_data)
-        self._get_sift_features = self.memory.cache(self._get_sift_features)
+        self._get_sift_features = self.memory.cache(self._get_sift_features, ignore=['self'])
 
     def fit(self, X, y=None):
         """
@@ -154,28 +154,25 @@ class preprocess:
 
 
     # Calculates SIFT features.  Uses threads to speed up computation.
-    @staticmethod
-    def _get_sift_features(X, flatten, n_jobs, step_size):
+    def _get_sift_features(self, X, flatten, n_jobs, step_size):
 
         numImg = X.shape[0]
 
         print("Computing SIFT features...")
 
-        # Inefficient wrapper for SIFT calculation to get around pickle limitations on OpenCV objects
-        @staticmethod
-        def sift_compute(img, step_size):
-            kps = [KeyPoint(x, y, step_size) for y in range(0, img.shape[0], step_size)
-                   for x in range(0, img.shape[1], step_size)]
-            return xfeatures2d.SIFT_create().compute(img, kps)[1].astype('uint8')
-
-        result = np.array(Parallel(n_jobs=n_jobs)(delayed(sift_compute)(X[i], step_size)
+        result = np.array(Parallel(n_jobs=n_jobs)(delayed(self.sift_compute)(X[i], step_size)
                                                   for i in tqdm(range(numImg))))
-
         if flatten:
             result = result.reshape((X.shape[0], -1))
 
         return result
 
+    # Inefficient wrapper for SIFT calculation to get around pickle limitations on OpenCV objects
+    @staticmethod
+    def sift_compute(img, step_size):
+        kps = [KeyPoint(x, y, step_size) for y in range(0, img.shape[0], step_size)
+               for x in range(0, img.shape[1], step_size)]
+        return xfeatures2d.SIFT_create().compute(img, kps)[1].astype('uint8')
 
 
     def writeToDisk(self, data, filename='data.bin'):
