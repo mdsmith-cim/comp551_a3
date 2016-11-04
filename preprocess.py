@@ -1,6 +1,7 @@
 import numpy as np
 from cv2 import xfeatures2d, KeyPoint, THRESH_BINARY
-from cv2 import threshold as cvthreshold, resize, INTER_CUBIC
+from cv2 import threshold as cvthreshold
+from cv2 import resize, INTER_CUBIC
 from cv2 import findContours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE
 from cv2 import morphologyEx, MORPH_CLOSE
 from tqdm import tqdm
@@ -125,24 +126,17 @@ class preprocess:
                 # Crop such that result is square -> not distorted
                 diffX = maxX - minX
                 diffY = maxY - minY
-                if diffX >= diffY:
-                    meanY = np.mean((minY, maxY)).astype('int64')
-                    centerX = (diffX/2).astype('int64')
-                    cropped = thres[np.max((meanY-centerX, 0)):np.min((meanY+centerX, imgSize[0])), minX:maxX]
-                else:
-                    meanX = np.mean((minX, maxX)).astype('int64')
-                    centerY = (diffY/2).astype('int64')
-                    cropped = thres[minY:maxY, np.max((meanX-centerY, 0)):np.min((meanX+centerY, imgSize[1]))]
 
-                # if cropped.shape[0] == 0:
-                #     print("Cropped shape: {0}".format(cropped.shape))
-                #     print("minX,maxX,minY,maxY: {0},{1},{2},{3}".format(minX,maxX, minY, maxY))
-                #     print("contours: {0}".format(contours))
-                #     import matplotlib.pyplot as plt
-                #     plt.imshow(thres, cmap='gray'); plt.show()
+                meanX = np.mean((minX, maxX))
+                meanY = np.mean((minY, maxY))
+                if diffX >= diffY:
+                    shiftAmount = meanX - meanY
+                    cropped = thres[np.max((minX-shiftAmount, 0)).astype('int'):np.min((maxX-shiftAmount + 1, imgSize[0])).astype('int'), minX:maxX + 1]
+                else:
+                    shiftAmount = meanY - meanX
+                    cropped = thres[minY:maxY + 1, np.max((minY-shiftAmount + 1, 0)).astype('int'):np.min((maxY-shiftAmount, imgSize[1])).astype('int')]
 
                 thres = resize(cropped, imgSize, interpolation=INTER_CUBIC)
-
 
             X_clean[i] = thres
 
