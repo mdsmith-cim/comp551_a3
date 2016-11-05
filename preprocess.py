@@ -12,7 +12,7 @@ class preprocess:
     valid_processes = ['clean', 'sift']
 
     def __init__(self, process, threshold=254, step_size=5, flatten=False, center=True, closing=True,
-                 center_pad=2, morph_size=(2, 2), n_jobs=-1, cache_dir="cache"):
+                 center_pad=2, morph_size=(2, 2), n_jobs=-1, cache_dir="cache", normalize=False):
         """
         Initializes the class.
         :param process: string
@@ -35,6 +35,8 @@ class preprocess:
             The size of the morphological operator to use when closing is True
         :param cache_dir: string
             Directory to use as a cache for features to avoid recalculation
+        :param normalize: boolean
+            Whether to normalize data to the 0-1 range and set to 32-bit floating point or not.
         """
         self.threshold = threshold
         self.step_size = step_size
@@ -43,6 +45,7 @@ class preprocess:
         self.center_pad = center_pad
         self.closing = closing
         self.morph_size = morph_size
+        self.normalize = normalize
 
         if process not in self.valid_processes:
             raise Exception('process {0} is a valid process. Valid methods are: {1}'.format(process,
@@ -75,13 +78,22 @@ class preprocess:
         """
 
         if self.process == 'clean':
-            return self._get_clean_data(X, self.flatten, self.center, self.center_pad, self.closing,
+            result = self._get_clean_data(X, self.flatten, self.center, self.center_pad, self.closing,
                                         self.morph_size, self.threshold)
+            if self.normalize:
+                return result.astype('float32') / 255
+            else:
+                return result
 
         elif self.process == 'sift':
             X_clean = self._get_clean_data(X, False, self.center, self.center_pad, self.closing,
                                            self.morph_size, self.threshold)
-            return self._get_sift_features(X_clean, self.flatten, self.n_jobs, self.step_size)
+            result = self._get_sift_features(X_clean, self.flatten, self.n_jobs, self.step_size)
+
+            if self.normalize:
+                return result.astype('float32') / 255
+            else:
+                return result
         else:
             raise Exception('Invalid process {0}'.format(self.process))
 
@@ -190,7 +202,7 @@ class preprocess:
     def get_params(self, deep=True):
         return {'process': self.process, 'threshold': self.threshold, 'step_size': self.step_size,
                 'flatten': self.flatten, 'center': self.center, 'closing': self.closing, 'center_pad': self.center_pad,
-                'morph_size': self.morph_size }
+                'morph_size': self.morph_size, 'normalzie': self.normalize}
 
     def set_params(self, **params):
 
