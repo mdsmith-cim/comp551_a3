@@ -202,7 +202,7 @@ class preprocess:
     def get_params(self, deep=True):
         return {'process': self.process, 'threshold': self.threshold, 'step_size': self.step_size,
                 'flatten': self.flatten, 'center': self.center, 'closing': self.closing, 'center_pad': self.center_pad,
-                'morph_size': self.morph_size, 'normalzie': self.normalize}
+                'morph_size': self.morph_size, 'normalize': self.normalize}
 
     def set_params(self, **params):
 
