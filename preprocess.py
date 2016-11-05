@@ -192,6 +192,24 @@ class preprocess:
                 'flatten': self.flatten, 'center': self.center, 'closing': self.closing, 'center_pad': self.center_pad,
                 'morph_size': self.morph_size }
 
+    def set_params(self, **params):
+
+        if not params:
+            # Simple optimisation to gain speed (inspect is slow)
+            return self
+        valid_params = self.get_params()
+        for key, value in params:
+
+            # simple objects case
+            if key not in valid_params:
+                raise ValueError('Invalid parameter %s for estimator %s. '
+                                 'Check the list of available parameters '
+                                 'with `estimator.get_params().keys()`.' %
+                                 (key, self.__class__.__name__))
+            setattr(self, key, value)
+
+        return self
+
     # Crude imitation of sklearn's string representation functionality
     def __repr__(self):
         return 'preprocess' + str(self.get_params())
