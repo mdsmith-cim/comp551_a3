@@ -198,7 +198,7 @@ class preprocess:
             # Simple optimisation to gain speed (inspect is slow)
             return self
         valid_params = self.get_params()
-        for key, value in params:
+        for key, value in params.items():
 
             # simple objects case
             if key not in valid_params:
