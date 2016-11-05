@@ -187,8 +187,11 @@ class preprocess:
         """
         return np.fromfile(filename, dtype='uint8').reshape(shape)
 
+    def get_params(self, deep=True):
+        return {'process': self.process, 'threshold': self.threshold, 'step_size': self.step_size,
+                'flatten': self.flatten, 'center': self.center, 'closing': self.closing, 'center_pad': self.center_pad,
+                'morph_size': self.morph_size }
+
     # Crude imitation of sklearn's string representation functionality
     def __repr__(self):
-        return 'preprocess' + str({'process': self.process, 'threshold': self.threshold, 'step_size': self.step_size,
-                                   'n_jobs': self.n_jobs, 'caching': self.memory, 'center': self.center,
-                                   'flatten': self.flatten, 'center_pad': self.center_pad})
+        return 'preprocess' + str(self.get_params())
