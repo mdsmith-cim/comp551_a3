@@ -1,6 +1,7 @@
 import numpy as np
 from cv2 import xfeatures2d, KeyPoint, THRESH_BINARY
-from cv2 import threshold as cvthreshold, resize, INTER_CUBIC
+from cv2 import threshold as cvthreshold
+from cv2 import resize, INTER_CUBIC
 from cv2 import findContours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE
 from cv2 import morphologyEx, MORPH_CLOSE
 from tqdm import tqdm
@@ -11,7 +12,7 @@ class preprocess:
     valid_processes = ['clean', 'sift']
 
     def __init__(self, process, threshold=254, step_size=5, flatten=False, center=True, closing=True,
-                 center_pad=2, morph_size=(2, 2), n_jobs=-1, cache_dir="cache"):
+                 center_pad=2, morph_size=(2, 2), n_jobs=-1, cache_dir="cache", normalize=False):
         """
         Initializes the class.
         :param process: string
@@ -34,6 +35,8 @@ class preprocess:
             The size of the morphological operator to use when closing is True
         :param cache_dir: string
             Directory to use as a cache for features to avoid recalculation
+        :param normalize: boolean
+            Whether to normalize data to the 0-1 range and set to 32-bit floating point or not.
         """
         self.threshold = threshold
         self.step_size = step_size
@@ -42,6 +45,7 @@ class preprocess:
         self.center_pad = center_pad
         self.closing = closing
         self.morph_size = morph_size
+        self.normalize = normalize
 
         if process not in self.valid_processes:
             raise Exception('process {0} is a valid process. Valid methods are: {1}'.format(process,
@@ -74,13 +78,22 @@ class preprocess:
         """
 
         if self.process == 'clean':
-            return self._get_clean_data(X, self.flatten, self.center, self.center_pad, self.closing,
+            result = self._get_clean_data(X, self.flatten, self.center, self.center_pad, self.closing,
                                         self.morph_size, self.threshold)
+            if self.normalize:
+                return result.astype('float32') / 255
+            else:
+                return result
 
         elif self.process == 'sift':
             X_clean = self._get_clean_data(X, False, self.center, self.center_pad, self.closing,
                                            self.morph_size, self.threshold)
-            return self._get_sift_features(X_clean, self.flatten, self.n_jobs, self.step_size)
+            result = self._get_sift_features(X_clean, self.flatten, self.n_jobs, self.step_size)
+
+            if self.normalize:
+                return result.astype('float32') / 255
+            else:
+                return result
         else:
             raise Exception('Invalid process {0}'.format(self.process))
 
@@ -125,24 +138,17 @@ class preprocess:
                 # Crop such that result is square -> not distorted
                 diffX = maxX - minX
                 diffY = maxY - minY
-                if diffX >= diffY:
-                    meanY = np.mean((minY, maxY)).astype('int64')
-                    centerX = (diffX/2).astype('int64')
-                    cropped = thres[np.max((meanY-centerX, 0)):np.min((meanY+centerX, imgSize[0])), minX:maxX]
-                else:
-                    meanX = np.mean((minX, maxX)).astype('int64')
-                    centerY = (diffY/2).astype('int64')
-                    cropped = thres[minY:maxY, np.max((meanX-centerY, 0)):np.min((meanX+centerY, imgSize[1]))]
 
-                # if cropped.shape[0] == 0:
-                #     print("Cropped shape: {0}".format(cropped.shape))
-                #     print("minX,maxX,minY,maxY: {0},{1},{2},{3}".format(minX,maxX, minY, maxY))
-                #     print("contours: {0}".format(contours))
-                #     import matplotlib.pyplot as plt
-                #     plt.imshow(thres, cmap='gray'); plt.show()
+                meanX = np.mean((minX, maxX))
+                meanY = np.mean((minY, maxY))
+                if diffX >= diffY:
+                    shiftAmount = meanX - meanY
+                    cropped = thres[np.max((minX-shiftAmount, 0)).astype('int'):np.min((maxX-shiftAmount + 1, imgSize[0])).astype('int'), minX:maxX + 1]
+                else:
+                    shiftAmount = meanY - meanX
+                    cropped = thres[minY:maxY + 1, np.max((minY-shiftAmount + 1, 0)).astype('int'):np.min((maxY-shiftAmount, imgSize[1])).astype('int')]
 
                 thres = resize(cropped, imgSize, interpolation=INTER_CUBIC)
-
 
             X_clean[i] = thres
 
@@ -193,8 +199,29 @@ class preprocess:
         """
         return np.fromfile(filename, dtype='uint8').reshape(shape)
 
+    def get_params(self, deep=True):
+        return {'process': self.process, 'threshold': self.threshold, 'step_size': self.step_size,
+                'flatten': self.flatten, 'center': self.center, 'closing': self.closing, 'center_pad': self.center_pad,
+                'morph_size': self.morph_size, 'normalize': self.normalize}
+
+    def set_params(self, **params):
+
+        if not params:
+            # Simple optimisation to gain speed (inspect is slow)
+            return self
+        valid_params = self.get_params()
+        for key, value in params.items():
+
+            # simple objects case
+            if key not in valid_params:
+                raise ValueError('Invalid parameter %s for estimator %s. '
+                                 'Check the list of available parameters '
+                                 'with `estimator.get_params().keys()`.' %
+                                 (key, self.__class__.__name__))
+            setattr(self, key, value)
+
+        return self
+
     # Crude imitation of sklearn's string representation functionality
     def __repr__(self):
-        return 'preprocess' + str({'process': self.process, 'threshold': self.threshold, 'step_size': self.step_size,
-                                   'n_jobs': self.n_jobs, 'caching': self.memory, 'center': self.center,
-                                   'flatten': self.flatten, 'center_pad': self.center_pad})
+        return 'preprocess' + str(self.get_params())

@@ -8,8 +8,14 @@ if __name__ == '__main__':
 
     # Initialize preprocess class: cleaning only
     # Relevant arguments: threshold, flatten
-    #pp = preprocess('clean', flatten=False, center=True, threshold=254, closing=False, morph_size=(2, 2))
-    #trainX_clean = pp.transform(trainX)
+    pp = preprocess('sift', flatten=False, center=False, threshold=254, step_size=5, closing=False, morph_size=(2, 2),
+                    center_pad=2)
+    trainX_clean = pp.transform(trainX)
+
+    testX_clean = pp.transform(testX)
+
+    pp.writeToDisk(trainX_clean, 'trainX_sift_center=False_thres=254_step=5_close=False_center_pad=2.bin')
+    pp.writeToDisk(testX_clean, 'testX_sift_center=False_thres=254_step=5_close=False_center_pad=2.bin')
 
     # Initialize preprocess class for SIFT
     # Relevant arguments:
@@ -17,7 +23,7 @@ if __name__ == '__main__':
     # - step_size: Number of pixels between keypoints.  Smaller number = more keypoints and a larger feature vector
     # - flatten: flattens SIFT vector to 1-D for use with algorithms that ignore spatial positioning like logistic
     # regression
-    pp = preprocess('sift', flatten=False, center=True, threshold=254, closing=False)
+    #pp = preprocess('sift', flatten=False, center=True, threshold=254, closing=False)
 
     # Transform data
     # IMPORTANT NOTE: automatic caching is in use:
@@ -25,4 +31,4 @@ if __name__ == '__main__':
     # On subsequent runs, *if arguments are identical*, data is loaded from disk saving computation time
     # This persists even if the Python is restarted, dependant only on the cache directory not being deleted
     # The cache directory is specified as an argument to the constructor
-    trainX_SIFT = pp.transform(trainX)
+    #trainX_SIFT = pp.transform(trainX)
