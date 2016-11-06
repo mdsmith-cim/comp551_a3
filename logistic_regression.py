@@ -26,7 +26,7 @@ joblib.dump(grid, "log_reg_CV_clean.pk")
 # Reload data just in case through a bug original data is modified
 trainX, trainY, testX = load_data()
 
-pipe = make_pipeline(preprocess('sift', flatten=True, center=True, closing=False, normalize=True),
+pipe = make_pipeline(preprocess('sift', flatten=True, center=True, closing=False, normalize=True, n_jobs=1),
                      LogisticRegression(solver='sag', n_jobs=-1, verbose=60))
 
 params = dict(logisticregression__C=[0.01, 0.1, 1, 10, 100])
