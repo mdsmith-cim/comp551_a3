@@ -11,7 +11,7 @@ class preprocess:
 
     valid_processes = ['clean', 'sift']
 
-    def __init__(self, process, threshold=254, step_size=5, flatten=False, center=True, closing=True,
+    def __init__(self, process, threshold=254, step_size=5, flatten=False, center=True, closing=False,
                  center_pad=2, morph_size=(2, 2), n_jobs=-1, cache_dir="cache", normalize=False):
         """
         Initializes the class.
