@@ -2,6 +2,8 @@ from preprocess import preprocess
 from data_utils import load_data
 import numpy as np
 
+# Generates preprocessing data and saves to disk for use by other team members
+
 
 np.random.seed(984930)  # for reproducibility
 
